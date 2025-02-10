@@ -1,0 +1,26 @@
+DGS004
+null 0 0
+cg  "ui.stylesheet":"graph {fill-color: cyan;} node {fill-color: red;size:30px;} edge {size: 2px ;}"
+an "n1"
+cn "n1"  "x":10
+cn "n1"  "y":20
+cn "n1"  "ui.label":"n1"
+cn "n1"  "ui.style":"fill-color: green;"
+an "n2"
+cn "n2"  "x":20
+cn "n2"  "y":10
+cn "n2"  "cost":38
+cn "n2"  "ui.label":"n2"
+an "n3"
+cn "n3"  "x":20
+cn "n3"  "ui.label":"n3"
+cn "n3"  "y":20
+an "Added node 1"
+cn "Added node 1"  "ui.label":"Added node 1"
+an "Added node 2"
+cn "Added node 2"  "ui.label":"Added node 2"
+ae "e12" "n1"  "n2"
+ae "Added vert 1" "Added node 1"  "n1"
+ce "Added vert 1"  "ui.label":"Added vert 1"
+ae "Added vert 2" "Added node 2"  "n3"
+ce "Added vert 2"  "ui.label":"Added vert 2"

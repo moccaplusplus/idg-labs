@@ -1,0 +1,7 @@
+DGS004
+
+cg ui.stylesheet="graph {fill-color: lightblue;} node {fill-color: red;size:30px;} edge {size: 2px ;}"
+an n1 x=10 y=20 ui.label="n1" ui.style="fill-color: green;"
+an n2 x=20 y=10 cost=38 ui.label="n2" 
+an n3 x=20 y=20 ui.label="n3"
+ae e12 n1 n2 
