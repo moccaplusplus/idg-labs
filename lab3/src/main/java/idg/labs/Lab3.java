@@ -11,6 +11,10 @@ import static java.lang.String.valueOf;
 import static java.util.stream.IntStream.range;
 
 public class Lab3 {
+    static {
+        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+    }
+    
     public static void main(String[] args) {
         ring(5).display(true);
         sleep();

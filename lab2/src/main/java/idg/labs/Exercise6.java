@@ -7,6 +7,7 @@ import org.graphstream.graph.Node;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 import static java.util.Collections.emptySet;
@@ -22,7 +23,7 @@ public class Exercise6 implements Runnable {
         new Exercise6().run();
     }
 
-    public static Set<Edge> primSpanningTree(final Graph graph, final ToIntFunction<Edge> costFunction) {
+    public static Set<Edge> primSpanningTree(Graph graph, ToIntFunction<Edge> costFunction, Consumer<Edge> collector) {
         int nodeCount = graph.getNodeCount();
         if (nodeCount == 0) {
             return emptySet();
@@ -38,6 +39,7 @@ public class Exercise6 implements Runnable {
             final Node node = tree.contains(edge.getSourceNode().getId()) ? edge.getTargetNode() : edge.getSourceNode();
             tree.add(node.getId());
             mst.add(edge);
+            collector.accept(edge);
             if (mst.size() == nodeCount - 1) break;
             cutSet.removeIf(e -> e.getNode0().getId().equals(node.getId()) || e.getNode1().getId().equals(node.getId()));
             cutSet.addAll(node.getEdgeSet().stream()
@@ -54,13 +56,16 @@ public class Exercise6 implements Runnable {
     }
 
     private void run(String dgsFile) {
-        System.out.printf("Running Dijkstra for graph: %s%n", dgsFile);
+        System.out.printf("Running Prim Min Spanning Tree for graph: %s%n", dgsFile);
         Graph graph = Tools.read(dgsFile);
-
-        Set<Edge> minSpanningTree = primSpanningTree(graph, edge -> edge.getAttribute("distance"));
-        minSpanningTree.forEach(edge -> edge.setAttribute(
-                "ui.style", "fill-color:black;size:5;"));
-
         graph.display(true);
+        primSpanningTree(
+                graph,
+                edge -> edge.getAttribute("distance"),
+                edge -> {
+                    edge.setAttribute("ui.style", "fill-color:black;size:5;");
+                    Tools.sleep(50);
+                });
+        Tools.sleep(1000);
     }
 }

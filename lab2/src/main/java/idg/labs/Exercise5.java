@@ -4,9 +4,14 @@ import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.ToIntFunction;
 
 import static java.lang.String.format;
@@ -33,11 +38,53 @@ public class Exercise5 implements Runnable {
         return vertexEccentricities;
     }
 
+    public static Map<Node, Integer> bfsDist(Node startNode) {
+        Map<Node, Integer> distanceMap = new HashMap<>();
+        List<Node> queue = new ArrayList<>();
+        List<Node> nextQueue = new ArrayList<>();
+        Set<Node> visited = new HashSet<>();
+        queue.add(startNode);
+        visited.add(startNode);
+        int dist = 0;
+        distanceMap.put(startNode, dist);
+        while (!queue.isEmpty()) {
+            dist++;
+            for (Node node : queue) {
+                Iterator<Node> it = node.getNeighborNodeIterator();
+                while (it.hasNext()) {
+                    Node targetNode = it.next();
+                    if (!visited.contains(targetNode)) {
+                        nextQueue.add(targetNode);
+                        visited.add(targetNode);
+                        distanceMap.put(targetNode, dist);
+                    }
+                }
+            }
+            queue.clear();
+            queue.addAll(nextQueue);
+            nextQueue.clear();
+        }
+        return distanceMap;
+    }
+
+    public static Map<Node, Integer> bfsVertexEccentricities(Graph graph) {
+        Map<Node, Integer> vertexEccentricities = new HashMap<>();
+        for (Node node : graph.getNodeSet()) {
+            Map<Node, Integer> cost = bfsDist(node);
+            int eccentricity = 0;
+            for (int c : cost.values()) {
+                eccentricity += c;
+            }
+            vertexEccentricities.put(node, eccentricity);
+        }
+        return vertexEccentricities;
+    }
+
     @Override
     public void run() {
         Graph graph = Tools.read("dgs/uncompletegrid_50-0.12.dgs");
 
-        Map<Node, Integer> eccentricitiesByNode = vertexEccentricities(graph, edge -> 1);
+        Map<Node, Integer> eccentricitiesByNode = bfsVertexEccentricities(graph);
         int diameter = eccentricitiesByNode.values().stream().mapToInt(Integer::intValue).max().orElse(0);
         int radius = eccentricitiesByNode.values().stream().mapToInt(Integer::intValue).min().orElse(0);
 

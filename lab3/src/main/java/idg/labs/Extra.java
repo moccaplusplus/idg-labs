@@ -34,6 +34,10 @@ public class Extra {
             "node.path { size: 7; stroke-width: 0; fill-color: #eee; }" +
             "edge.path { fill-color: #eee; }";
 
+    static {
+        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+    }
+
     public static void main(String... args) {
         SingleGraph graph = maze(30, 30);
         graph.display(false);
