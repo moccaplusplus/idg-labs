@@ -33,9 +33,9 @@ public class Generator {
 
     public static final Random RANDOM = new Random();
     private static final String STYLESHEET =
-            "graph { fill-color: white; padding: 40px; }"
-                    + "node { size: 5px; shape: box; fill-color: red; }"
-                    + "edge { size : 1px; fill-color: blue;}";
+            "graph { fill-color:white;padding:40px; }"
+                    + "node { size:5px;shape:box;fill-color:#333; }"
+                    + "edge { size:1px;fill-color:#bbb;}";
 
     static {
         EnumMap<Topology, Supplier<SingleGraph>> generators = new EnumMap<>(Generator.Topology.class);
