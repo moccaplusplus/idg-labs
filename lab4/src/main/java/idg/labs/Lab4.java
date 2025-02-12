@@ -1,11 +1,16 @@
 package idg.labs;
 
-import idg.labs.Generator.Topology;
+import org.apache.commons.math3.util.Pair;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.SingleGraph;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -20,39 +25,32 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static idg.labs.Generator.GENERATORS;
-import static idg.labs.Generator.RANDOM;
+import static idg.labs.Generators.RANDOM;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.IntStream.range;
 
-public class Lab4 implements Runnable {
+public class Lab4 {
     private static final int[] TOKEN_COUNTS = {10, 20, 50, 100};
+    private static final int RUN_COUNT = 20;
 
     static {
         System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
     }
 
     public static void main(String[] args) {
-        new Lab4().run();
+        question1();
+
+//        question2();
+
+        question3();
     }
 
-    @Override
-    public void run() {
-        Map<Topology, SingleGraph> graphsByTopology = GENERATORS.entrySet().stream()
-                .collect(toMap(Map.Entry::getKey, e -> e.getValue().get()));
-
-        question1(graphsByTopology);
-        delay(3000);
-
-        question2(graphsByTopology);
-    }
-
-    private void question1(Map<Topology, SingleGraph> graphsByTopology) {
-        graphsByTopology.forEach((topology, graph) -> {
+    private static void question1() {
+        Topology.forEach((topology, graph) -> {
             int diameter = bfsDiameter(graph);
             SortedMap<Integer, Long> degreeDistribution = degreeDistribution(graph);
             System.out.printf("Topology: %s%nDiameter: %d%n", topology, diameter);
@@ -61,63 +59,51 @@ public class Lab4 implements Runnable {
                     (degree, nodeCount) -> System.out.printf("%-15d%-15d%n", degree, nodeCount));
             System.out.println();
         });
-
+        hitAKey("Hit a key to continue");
     }
 
-    private void question2(Map<Topology, SingleGraph> graphsByTopology) {
+    private static void question2() {
         int tokenCount = TOKEN_COUNTS[TOKEN_COUNTS.length / 2];
-        graphsByTopology.forEach((topology, graph) -> {
-            graph.display();
+        range(0, 2).mapToObj(i -> i == 1).forEach(simultaneous -> Topology.forEach((topology, graph) -> {
+            System.out.printf(
+                    "Random walk visualization%nTopology: %s, tokenCount: %d, simultaneous: %s%n",
+                    topology, tokenCount, simultaneous);
+            graph.display(true);
             delay(1000);
-            randomWalk(graph, tokenCount, true, (moveNo, tokens) -> {
+            int moveCount = randomWalk(graph, tokenCount, simultaneous, (moveNo, tokens) -> {
                 range(0, tokenCount).forEach(i -> markToken(tokens, i));
-                delay(30);
+                delay(20);
             });
-            delay(2000);
-            clearTokenMarks(graph);
-        });
-
-        graphsByTopology.forEach((topology, graph) -> {
-            graph.display();
-            delay(1000);
-            randomWalk(graph, tokenCount, false, (moveNo, tokens) -> {
-                if (moveNo == 0) {
-                    range(0, tokenCount).forEach(i -> markToken(tokens, i));
-                } else {
-                    markToken(tokens, (moveNo - 1) % tokenCount);
-                }
-                delay(30);
-            });
-            delay(2000);
-            clearTokenMarks(graph);
-        });
+            System.out.printf("Move count: %d%n", moveCount);
+            hitAKey("Hit a key to continue");
+        }));
     }
 
-    private void question3(Map<Topology, SingleGraph> graphsByTopology) {
-        int runCount = 20;
-        for (int tokenCount : TOKEN_COUNTS) {
-            graphsByTopology.forEach((topology, graph) -> {
-                for (int i = 0; i < runCount; i++) {
-                    randomWalk(graph, tokenCount, false);
-                    randomWalk(graph, tokenCount, true);
-                }
-            });
-        }
+    private static void question3() {
+        List<Pair<Topology, List<Pair<Integer, Integer>>>> dataset = Topology.stream()
+                .map(topology -> {
+                    SingleGraph graph = topology.graph.get();
+                    return Pair.create(
+                            topology,
+                            Arrays.stream(TOKEN_COUNTS).boxed().map(tokenCount -> Pair.create(
+                                            tokenCount, (int) range(0, RUN_COUNT).parallel()
+                                                    .flatMap(runNo -> range(0, 2)
+                                                            .map(i -> randomWalk(graph, tokenCount, i == 1)))
+                                                    .average().orElse(0)))
+                                    .collect(toList()));
+                })
+                .collect(toList());
+
+        Chart.showAndSave(dataset);
+        printResults(dataset);
     }
 
     private static void markToken(Node[] tokens, int i) {
         double ratio = i / (tokens.length - 1.0);
         String color = format("rgb(%d,0,%d)", (int) (255 * ratio), (int) (255 * (1 - ratio)));
-        String style = format("shape:box;fill-color:%s;size:5px;text-color:%s;", color, color);
+        String style = format("shape:circle;fill-color:%s;size:5px;text-color:%s;", color, color);
         tokens[i].setAttribute("ui.style", style);
         tokens[i].setAttribute("label", "token " + i);
-    }
-
-    private void clearTokenMarks(SingleGraph graph) {
-        graph.getNodeSet().forEach(node -> {
-            node.setAttribute("ui.style", "size:5px;shape:box;fill-color:#333;");
-            node.removeAttribute("label");
-        });
     }
 
     private static SortedMap<Integer, Long> degreeDistribution(SingleGraph graph) {
@@ -171,6 +157,7 @@ public class Lab4 implements Runnable {
         });
     }
 
+    @SuppressWarnings("ConditionalBreakInInfiniteLoop")
     public static int randomWalk(
             Graph graph, int tokenCount, boolean simultaneous, BiConsumer<Integer, Node[]> onMove) {
         int moveCount = 0;
@@ -183,21 +170,27 @@ public class Lab4 implements Runnable {
         onMove.accept(moveCount, tokens);
 
         if (simultaneous) {
-            while (visitedNodes.size() < graph.getNodeCount()) {
+            while (true) {
                 for (int i = 0; i < tokenCount; i++) {
                     tokens[i] = randomNeighbour(tokens[i]);
                     visitedNodes.add(tokens[i].getId());
                 }
                 moveCount++;
                 onMove.accept(moveCount, tokens);
+                if (visitedNodes.size() == graph.getNodeCount()) {
+                    break;
+                }
             }
         } else {
-            while (visitedNodes.size() < graph.getNodeCount()) {
+            while (true) {
                 int i = moveCount % tokenCount;
                 tokens[i] = randomNeighbour(tokens[i]);
                 visitedNodes.add(tokens[i].getId());
                 moveCount++;
                 onMove.accept(moveCount, tokens);
+                if (visitedNodes.size() == graph.getNodeCount()) {
+                    break;
+                }
             }
         }
         return moveCount;
@@ -207,10 +200,51 @@ public class Lab4 implements Runnable {
         return new ArrayList<Edge>(node.getEdgeSet()).get(RANDOM.nextInt(node.getDegree())).getOpposite(node);
     }
 
+    private static void printResults(List<Pair<Topology, List<Pair<Integer, Integer>>>> dataset) {
+        try (PrintWriter writer = new PrintWriter(new OutputStream() {
+            private final OutputStream fileStream = Files.newOutputStream(
+                    Paths.get("avgMovesByTopologyAndTokenCount.txt"));
+
+            @Override
+            public void write(int b) throws IOException {
+                System.out.write(b);
+                fileStream.write(b);
+            }
+
+            @Override
+            public void close() throws IOException {
+                fileStream.close();
+            }
+        })) {
+            writer.println("Average Cover Time by Topology than by Token Count");
+            writer.printf("%-25s%s%n", "Topology", "Tokens");
+            writer.printf("%-25s", "");
+            Arrays.stream(TOKEN_COUNTS).forEach(i -> writer.printf("%-15d", i));
+            writer.println();
+            dataset.forEach(topologyAndResults -> {
+                writer.printf("%-25s", topologyAndResults.getFirst());
+                topologyAndResults.getSecond().forEach(tokenCountAndAvgMoves -> writer.printf(
+                        "%-15d", tokenCountAndAvgMoves.getSecond()));
+                writer.println();
+            });
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private static void delay(long millis) {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void hitAKey(String msg) {
+        System.out.println(msg);
+        try {
+            System.in.read();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

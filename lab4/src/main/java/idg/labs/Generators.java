@@ -6,73 +6,50 @@ import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.SingleGraph;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.stream.IntStream.range;
 
-public class Generator {
-    public enum Topology {
-        grid,
-        torus,
-        erdosRenyi,
-        planar,
-        fullyConnected,
-        ring,
-        preferentialAttachment
-    }
-
-    public static final Map<Topology, Supplier<SingleGraph>> GENERATORS;
-
+public class Generators {
     public static final Random RANDOM = new Random();
     private static final String STYLESHEET =
             "graph { fill-color:white;padding:40px; }"
-                    + "node { size:5px;shape:box;fill-color:#333; }"
+                    + "node { size:7px;shape:circle;fill-color:#222; }"
                     + "edge { size:1px;fill-color:#bbb;}";
 
-    static {
-        EnumMap<Topology, Supplier<SingleGraph>> generators = new EnumMap<>(Generator.Topology.class);
-        generators.put(Topology.grid, () -> grid(10, 10));
-        generators.put(Topology.torus, () -> torus(10));
-        generators.put(Topology.erdosRenyi, () -> erdosRenyi(100, 0.1));
-        generators.put(Topology.planar, () -> planar(100));
-        generators.put(Topology.fullyConnected, () -> fullyConnected(100));
-        generators.put(Topology.ring, () -> ring(100));
-        generators.put(Topology.preferentialAttachment, () -> preferentialAttachment(100, 5));
-        GENERATORS = Collections.unmodifiableMap(generators);
-    }
-
-    public static SingleGraph grid(int width, int height) {
+    public static SingleGraph grid(int width, int height, boolean moore) {
         SingleGraph graph = singleGraph("grid: " + width + ", " + height);
         int n = width * height;
         range(0, n).forEach(i -> graph.addNode(valueOf(i)));
-        range(1, n).filter(i -> i % width != 0).forEach(i -> addEdge(graph, i - 1, i));
+        range(0, n).filter(i -> i % width != 0).forEach(i -> addEdge(graph, i - 1, i));
         range(width, n).forEach(i -> addEdge(graph, i - width, i));
+        if (moore) {
+            range(width, n).filter(i -> i % width != 0).forEach(i -> addEdge(graph, i - width - 1, i));
+            range(width, n).filter(i -> i % width != 0).forEach(i -> addEdge(graph, i - width, i - 1));
+        }
         return graph;
     }
 
-    public static SingleGraph torus(int dim) {
-        SingleGraph graph = singleGraph("torus: " + dim + "x" + dim);
-        range(0, dim).forEach(row -> range(0, dim).forEach(col -> {
-            Node u = graph.addNode(row + "," + col);
-            u.addAttribute("x", row);
-            u.addAttribute("y", col);
-        }));
-        range(0, dim).forEach(row -> range(0, dim).forEach(col -> {
-            int nextCol = (col + 1) % dim;
-            Node u = graph.getNode(row * dim + col);
-            Node v = graph.getNode(row * dim + nextCol);
-            addEdge(graph, u, v);
-            Node w = graph.getNode(((row + 1) % dim) * dim + col);
-            addEdge(graph, u, w);
-        }));
+    public static SingleGraph torus(int width, int height, boolean moore) {
+        SingleGraph graph = singleGraph("torus: " + width + ", " + height);
+        int n = width * height;
+        range(0, n).forEach(i -> graph.addNode(valueOf(i)));
+        range(0, n).filter(i -> i % width != 0).forEach(i -> addEdge(graph, i - 1, i));
+        range(width, n).forEach(i -> addEdge(graph, i - width, i));
+        range(0, width).forEach(i -> addEdge(graph, i, i + (n - width)));
+        range(0, height).forEach(i -> addEdge(graph, i * width, ((i + 1) * width) - 1));
+        if (moore) {
+            range(width, n).filter(i -> i % width != 0).forEach(i -> addEdge(graph, i - width - 1, i));
+            range(width, n).filter(i -> i % width != 0).forEach(i -> addEdge(graph, i - width, i - 1));
+            range(0, width).forEach(i -> addEdge(graph, (i + 1) % width, i + n - width));
+            range(0, width).forEach(i -> addEdge(graph, i, ((i + 1) % width) + n - width));
+            range(1, height).forEach(i -> addEdge(graph, i * width, (i * width) - 1));
+            range(0, height - 1).forEach(i -> addEdge(graph, i * width, ((i + 2) * width) - 1));
+        }
         return graph;
     }
 
@@ -101,7 +78,7 @@ public class Generator {
         return graph;
     }
 
-    private static SingleGraph fullyConnected(int n) {
+    public static SingleGraph fullyConnected(int n) {
         SingleGraph graph = singleGraph("fullyConnected: " + n);
         range(0, n).forEach(i -> graph.addNode(valueOf(i)));
         range(0, n).forEach(i -> range(i + 1, n).forEach(j -> addEdge(graph, i, j)));
