@@ -37,7 +37,6 @@ public class Exercise5 implements Runnable {
         queue.add(startNode);
         visited.add(startNode);
         int dist = 0;
-        distanceMap.put(startNode, dist);
         while (!queue.isEmpty()) {
             dist++;
             for (Node node : queue) {
