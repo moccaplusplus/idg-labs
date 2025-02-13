@@ -2,9 +2,11 @@ package idg.labs;
 
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Element;
-import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
+import org.graphstream.graph.implementations.SingleGraph;
+import org.graphstream.stream.GraphParseException;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -13,16 +15,14 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.function.ToIntFunction;
 
-public class Exercise4 implements Runnable {
+public class Exercise4 {
     private static final String START_NODE_STYLE =
             "shape: box;fill-color: black;size: 10px, 10px;stroke-mode: plain;stroke-color:black;";
 
-    static {
-        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
-    }
-
-    public static void main(String... args) {
-        new Exercise4().run();
+    public static void main(String... args) throws IOException, GraphParseException {
+        run("dgs/gridvaluated_10_12.dgs");
+        Tools.hitAKey("Hit a key to continue");
+        run("dgs/gridvaluated_10_220.dgs");
     }
 
     public static Map<Node, Integer> dijkstra(Node startNode, ToIntFunction<Edge> costFunction) {
@@ -50,15 +50,9 @@ public class Exercise4 implements Runnable {
         return cost;
     }
 
-    @Override
-    public void run() {
-        run("dgs/gridvaluated_10_12.dgs");
-        run("dgs/gridvaluated_10_220.dgs");
-    }
-
-    private void run(String dgsFile) {
+    private static void run(String dgsFile) throws IOException, GraphParseException {
         System.out.printf("Running Dijkstra for graph: %s%n", dgsFile);
-        Graph graph = Tools.read(dgsFile);
+        SingleGraph graph = Tools.read(dgsFile);
         graph.display(true);
 
         Node startNode = graph.getNode(Tools.RANDOM.nextInt(graph.getNodeCount()));

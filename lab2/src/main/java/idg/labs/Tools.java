@@ -9,13 +9,14 @@ import java.util.Random;
 public class Tools {
     public static final Random RANDOM = new Random();
 
-    public static SingleGraph read(String file) {
+    static {
+        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+    }
+
+    public static SingleGraph read(String file) throws IOException, GraphParseException {
         SingleGraph graph = new SingleGraph("Graph from file: " + file);
-        try {
-            graph.read(file);
-        } catch (IOException | GraphParseException e) {
-            throw new IllegalStateException(e);
-        }
+        graph.read(file);
+        graph.addAttribute("ui.antialias");
         return graph;
     }
 
@@ -27,12 +28,8 @@ public class Tools {
         }
     }
 
-    public static void hitAKey(String msg) {
+    public static void hitAKey(String msg) throws IOException {
         System.out.println(msg);
-        try {
-            System.in.read();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        System.in.read();
     }
 }

@@ -19,16 +19,11 @@ public class Lab1 {
     public static void main(String[] args) {
         exercise1();
         hitAKey("Hit a key to continue");
-
         exercise2();
         hitAKey("Hit a key to continue");
-
         exercise3();
         hitAKey("Hit a key to continue");
-
         exercise4();
-        hitAKey("Hit a key to exit");
-        System.exit(0);
     }
 
     private static void setYX(Node node, int y, int x) {

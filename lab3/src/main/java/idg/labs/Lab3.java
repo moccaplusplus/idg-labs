@@ -4,53 +4,48 @@ import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 
-import java.util.stream.IntStream;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.stream.IntStream.range;
+import static java.util.stream.IntStream.rangeClosed;
 
 public class Lab3 {
+    private static final int MAX_WAIT_SECONDS = 5;
+
     static {
         System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
         ring(5).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         ring(10).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         ring(11).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         kAryTree(3, 3).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         kAryTree(2, 5).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         kAryTree(4, 2).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         grid(2, 3).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         grid(8, 12).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         grid(10, 10).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         honeycomb(3).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         honeycomb(8).display(true);
-        sleep();
-
+        hitAKeyOrWait();
         honeycomb(11).display(true);
-
     }
 
     public static SingleGraph ring(final int n) {
@@ -75,9 +70,9 @@ public class Lab3 {
         if (height == -1) {
             return graph;
         }
-        int nodeCount = IntStream.rangeClosed(0, height).map(i -> (int) Math.pow(k, i)).sum();
+        int nodeCount = rangeClosed(0, height).map(i -> (int) Math.pow(k, i)).sum();
         range(0, nodeCount).forEach(i -> graph.addNode(valueOf(i)));
-        range(0, nodeCount).forEach(i -> addEdge(graph, (i - 1) / k, i));
+        range(1, nodeCount).forEach(i -> addEdge(graph, (i - 1) / k, i));
         return graph;
     }
 
@@ -121,11 +116,24 @@ public class Lab3 {
         return graph.addEdge(format("%d -> %d", from, to), from, to);
     }
 
-    private static void sleep() {
+    private static void hitAKeyOrWait() throws IOException, InterruptedException {
+        hitAKeyOrWait("Hit a key or wait " + MAX_WAIT_SECONDS + " seconds to continue", MAX_WAIT_SECONDS * 1000L);
+    }
+
+    @SuppressWarnings("resource")
+    private static void hitAKeyOrWait(String msg, long maxWait) throws IOException, InterruptedException {
+        System.out.println(msg);
         try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            ForkJoinPool.commonPool()
+                    .submit(() -> System.in.read())
+                    .get(maxWait, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            System.out.println("Timeout");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            }
+            throw new IOException(e.getCause());
         }
     }
 }

@@ -3,7 +3,10 @@ package idg.labs;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
+import org.graphstream.graph.implementations.SingleGraph;
+import org.graphstream.stream.GraphParseException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,16 +23,34 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
-public class Exercise5 implements Runnable {
-    static {
-        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+public class Exercise5 {
+    public static void main(String... args) throws IOException, GraphParseException {
+        SingleGraph graph = Tools.read("dgs/uncompletegrid_50-0.12.dgs");
+        graph.display(true);
+
+        Map<Integer, Set<Node>> eccentricitiesByNode = bfsVertexEccentricities(graph);
+        int diameter = eccentricitiesByNode.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int radius = eccentricitiesByNode.keySet().stream().mapToInt(Integer::intValue).min().orElse(0);
+
+        System.out.printf("%-15s%-15s%n", "Eccentricity", "Nodes");
+        eccentricitiesByNode.entrySet().stream()
+                .sorted(Comparator.comparingInt(Map.Entry::getKey))
+                .forEach(entry -> {
+                    int eccentricity = entry.getKey();
+                    Set<Node> nodes = entry.getValue();
+                    System.out.printf("%-15d%-15s%n", eccentricity, nodes.stream().map(Node::getId).collect(joining(", ")));
+
+                    double ratio = (eccentricity - radius) / (double) (diameter - radius);
+                    int red = (int) (255 * ratio);
+                    int blue = (int) (255 * (1 - ratio));
+                    String style = format("shape:box;fill-color:rgb(%d,0,%d);size:10;", red, blue);
+                    nodes.forEach(node -> node.setAttribute("ui.style", style));
+                });
+        System.out.println();
+        System.out.printf("Diameter: %d, Radius %d%n", diameter, radius);
     }
 
-    public static void main(String... args) {
-        new Exercise5().run();
-    }
-
-    public static Map<Node, Integer> bfsDistances(Node startNode) {
+    private static Map<Node, Integer> bfsDistances(Node startNode) {
         Map<Node, Integer> distanceMap = new HashMap<>();
         List<Node> queue = new ArrayList<>();
         List<Node> nextQueue = new ArrayList<>();
@@ -57,12 +78,13 @@ public class Exercise5 implements Runnable {
         return distanceMap;
     }
 
-    public static int eccentricity(Map<Node, Integer> distances) {
+    private static int eccentricity(Map<Node, Integer> distances) {
         return distances.values().stream().mapToInt(Integer::intValue).max().orElse(0);
     }
 
-    public static Map<Integer, Set<Node>> vertexEccentricities(Graph graph, Function<Node, Map<Node, Integer>> distancesProvider) {
-        return graph.getNodeSet().stream().collect(groupingBy(node -> eccentricity(distancesProvider.apply(node)), toSet()));
+    private static Map<Integer, Set<Node>> vertexEccentricities(Graph graph, Function<Node, Map<Node, Integer>> distancesProvider) {
+        return graph.getNodeSet().stream().parallel()
+                .collect(groupingBy(node -> eccentricity(distancesProvider.apply(node)), toSet()));
     }
 
     private static Map<Integer, Set<Node>> bfsVertexEccentricities(Graph graph) {
@@ -71,33 +93,5 @@ public class Exercise5 implements Runnable {
 
     private static Map<Integer, Set<Node>> dijkstraVertexEccentricities(Graph graph, ToIntFunction<Edge> costFunction) {
         return vertexEccentricities(graph, node -> Exercise4.dijkstra(node, costFunction));
-    }
-
-    @Override
-    public void run() {
-        Graph graph = Tools.read("dgs/uncompletegrid_50-0.12.dgs");
-
-        Map<Integer, Set<Node>> eccentricitiesByNode = bfsVertexEccentricities(graph);
-        int diameter = eccentricitiesByNode.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
-        int radius = eccentricitiesByNode.keySet().stream().mapToInt(Integer::intValue).min().orElse(0);
-
-        System.out.printf("%-15s%-15s%n", "Eccentricity", "Nodes");
-        eccentricitiesByNode.entrySet().stream()
-                .sorted(Comparator.comparingInt(Map.Entry::getKey))
-                .forEach(entry -> {
-                    int eccentricity = entry.getKey();
-                    Set<Node> nodes = entry.getValue();
-                    System.out.printf("%-15d%-15s%n", eccentricity, nodes.stream().map(Node::getId).collect(joining(", ")));
-
-                    double ratio = (eccentricity - radius) / (double) (diameter - radius);
-                    int red = (int) (255 * ratio);
-                    int blue = (int) (255 * (1 - ratio));
-                    String style = format("shape:box;fill-color:rgb(%d,0,%d);size:7;", red, blue);
-                    nodes.forEach(node -> node.setAttribute("ui.style", style));
-                });
-        System.out.println();
-        System.out.printf("Diameter: %d, Radius %d%n", diameter, radius);
-
-        graph.display(true);
     }
 }

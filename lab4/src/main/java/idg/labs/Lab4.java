@@ -28,6 +28,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -46,18 +50,19 @@ public class Lab4 {
     private static final int RUN_COUNT = 20;
     private static final int CHART_WIDTH = 800;
     private static final int CHART_HEIGHT = 600;
+    private static final int MAX_WAIT_SECONDS = 5;
 
     static {
         System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         question1();
         question2();
         question3();
     }
 
-    private static void question1() throws IOException {
+    private static void question1() throws IOException, InterruptedException {
         Topology[] topologies = Topology.values();
         List<SingleGraph> graphs = Arrays.stream(topologies).map(Topology::graph).collect(toList());
         int[] diameters = graphs.stream().mapToInt(Lab4::bfsDiameter).toArray();
@@ -79,16 +84,16 @@ public class Lab4 {
                 "Graph Diameter by Topology", "", "by Topology", "Diameter",
                 toDiameterDataset(topologies, diameters));
         saveAndDisplayChart(diameterChart, "diameter.png");
-        hitAKey("Hit a key to continue");
+        hitAKeyOrWait();
 
         JFreeChart degreeDistributionChart = Charts.scatterPlot(
                 "Degree Distribution", "", "Degree", "Node Count",
                 toDegreeDistributionDataset(topologies, degreeDistributions));
         saveAndDisplayChart(degreeDistributionChart, "degree-distribution.png");
-        hitAKey("Hit a key to continue");
+        hitAKeyOrWait();
     }
 
-    private static void question2() throws IOException {
+    private static void question2() throws IOException, InterruptedException {
         Topology[] topologies = Topology.values();
         int tokenCount = TOKEN_COUNTS[TOKEN_COUNTS.length / 2];
         boolean[] simultaneousOrNot = {false, true};
@@ -105,12 +110,12 @@ public class Lab4 {
                     delay(20);
                 });
                 System.out.printf("Move count: %d%n", moveCount);
-                hitAKey("Hit a key to continue");
+                hitAKeyOrWait();
             }
         }
     }
 
-    private static void question3() throws IOException {
+    private static void question3() throws IOException, InterruptedException {
         Topology[] topologies = Topology.values();
         for (boolean simultaneous : new boolean[]{false, true}) {
             List<double[]> avgCoverTimes = Arrays.stream(topologies)
@@ -143,7 +148,7 @@ public class Lab4 {
                     title, subTitle, "Token Count", "Average Move Count",
                     toAvgCoverTimeDataset(topologies, avgCoverTimes));
             saveAndDisplayChart(chart, fileNameBase + ".png");
-            hitAKey("Hit a key to continue");
+            hitAKeyOrWait();
         }
     }
 
@@ -192,7 +197,8 @@ public class Lab4 {
     }
 
     private static Map<Integer, Set<Node>> vertexEccentricities(Graph graph, Function<Node, Map<Node, Integer>> distancesProvider) {
-        return graph.getNodeSet().stream().collect(groupingBy(node -> eccentricity(distancesProvider.apply(node)), toSet()));
+        return graph.getNodeSet().stream().parallel()
+                .collect(groupingBy(node -> eccentricity(distancesProvider.apply(node)), toSet()));
     }
 
     private static int bfsDiameter(SingleGraph graph) {
@@ -315,8 +321,24 @@ public class Lab4 {
         }
     }
 
-    private static void hitAKey(String msg) throws IOException {
+    private static void hitAKeyOrWait() throws IOException, InterruptedException {
+        hitAKeyOrWait("Hit a key or wait " + MAX_WAIT_SECONDS + " seconds to continue", MAX_WAIT_SECONDS * 1000L);
+    }
+
+    @SuppressWarnings("resource")
+    private static void hitAKeyOrWait(String msg, long maxWait) throws IOException, InterruptedException {
         System.out.println(msg);
-        System.in.read();
+        try {
+            ForkJoinPool.commonPool()
+                    .submit(() -> System.in.read())
+                    .get(maxWait, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            System.out.println("Timeout");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            }
+            throw new IOException(e.getCause());
+        }
     }
 }

@@ -3,7 +3,9 @@ package idg.labs;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
+import org.graphstream.stream.GraphParseException;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Set;
@@ -14,16 +16,27 @@ import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.toList;
 
-public class Exercise6 implements Runnable {
-    static {
-        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+public class Exercise6 {
+    public static void main(String... args) throws IOException, GraphParseException {
+        run("dgs/gridvaluated_10_12.dgs");
+        Tools.hitAKey("Hit a key to continue");
+        run("dgs/gridvaluated_10_220.dgs");
     }
 
-    public static void main(String... args) {
-        new Exercise6().run();
+    private static void run(String dgsFile) throws IOException, GraphParseException {
+        System.out.printf("Running Prim Min Spanning Tree for graph: %s%n", dgsFile);
+        Graph graph = Tools.read(dgsFile);
+        graph.display(true);
+        primMinSpanningTree(
+                graph,
+                edge -> edge.getAttribute("distance"),
+                edge -> {
+                    edge.setAttribute("ui.style", "fill-color:black;size:5;");
+                    Tools.sleep(50);
+                });
     }
 
-    public static Set<Edge> primSpanningTree(Graph graph, ToIntFunction<Edge> costFunction, Consumer<Edge> collector) {
+    private static Set<Edge> primMinSpanningTree(Graph graph, ToIntFunction<Edge> costFunction, Consumer<Edge> collector) {
         int nodeCount = graph.getNodeCount();
         if (nodeCount == 0) {
             return emptySet();
@@ -47,25 +60,5 @@ public class Exercise6 implements Runnable {
                     .collect(toList()));
         }
         return mst;
-    }
-
-    @Override
-    public void run() {
-        run("dgs/gridvaluated_10_12.dgs");
-        run("dgs/gridvaluated_10_220.dgs");
-    }
-
-    private void run(String dgsFile) {
-        System.out.printf("Running Prim Min Spanning Tree for graph: %s%n", dgsFile);
-        Graph graph = Tools.read(dgsFile);
-        graph.display(true);
-        primSpanningTree(
-                graph,
-                edge -> edge.getAttribute("distance"),
-                edge -> {
-                    edge.setAttribute("ui.style", "fill-color:black;size:5;");
-                    Tools.sleep(50);
-                });
-        Tools.sleep(1000);
     }
 }

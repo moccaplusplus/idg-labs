@@ -2,26 +2,35 @@ package idg.labs;
 
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
+import org.graphstream.stream.GraphParseException;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class Exercise2 implements Runnable {
+public class Exercise2 {
+    private static final long DELAY_MILLIS = 50;
     private static final String VISITED_NODE_STYLE = "shape:box;fill-color:black;size:10;";
 
-    static {
-        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+    public static void main(String... args) throws IOException, GraphParseException {
+        traverseWithHighlighting("dgs/completegrid_10.dgs", startNode -> bfs(startNode, node -> {
+            node.setAttribute("ui.style", VISITED_NODE_STYLE);
+            Tools.sleep(DELAY_MILLIS);
+        }));
     }
 
-    public static void main(String... args) {
-        new Exercise2(50).run();
+    public static void traverseWithHighlighting(String dgsFile, Consumer<Node> traversalAlgorithm)
+            throws IOException, GraphParseException {
+        Graph graph = Tools.read(dgsFile);
+        graph.display(true);
+        Node startNode = graph.getNode(Tools.RANDOM.nextInt(graph.getNodeCount()));
+        traversalAlgorithm.accept(startNode);
     }
 
-    public static void bfs(Node startNode, Consumer<Node> visitor) {
+    private static void bfs(Node startNode, Consumer<Node> visitor) {
         LinkedList<Node> queue = new LinkedList<>();
         Set<Node> visited = new HashSet<>();
         queue.add(startNode);
@@ -38,30 +47,5 @@ public class Exercise2 implements Runnable {
                 }
             }
         }
-    }
-
-    private final long delayMillis;
-
-    public Exercise2(long delayMillis) {
-        this.delayMillis = delayMillis;
-    }
-
-    @Override
-    public void run() {
-        traverseWithHighlighting("dgs/completegrid_10.dgs", Exercise2::bfs);
-    }
-
-    protected void traverseWithHighlighting(String dgsFile, BiConsumer<Node, Consumer<Node>> traversalAlgorithm) {
-        Graph graph = Tools.read(dgsFile);
-        graph.display();
-        Node startNode = graph.getNode(Tools.RANDOM.nextInt(graph.getNodeCount()));
-        traversalAlgorithm.accept(startNode, node -> {
-            node.setAttribute("ui.style", getVisitedNodeStyle());
-            Tools.sleep(delayMillis);
-        });
-    }
-
-    protected String getVisitedNodeStyle() {
-        return VISITED_NODE_STYLE;
     }
 }

@@ -2,12 +2,12 @@ Average Cover Time by Topology and Token Count
 Run Count: 20, Non-Simultaneous
 Topology:                               Token Count:
                                         10        20        50        100       
-Grid (w=10, h=10, type=von Neumann)     1155.1    986.0     839.5     755.2     
-Grid (w=10, h=10, type=Moore)           1192.5    912.1     1062.1    583.1     
-Torus (w=10, h=10, type=von Neumann)    741.8     763.7     605.0     604.3     
-Torus (w=10, h=10, type=Moore)          633.4     636.1     580.1     469.3     
-Erdos-Renyi (n=100, p=2)                563.8     565.1     572.4     431.7     
-Planar (n=100)                          1359.2    1196.0    1169.4    844.2     
-Fully Connected (n=100)                 493.8     425.4     471.7     402.5     
-Ring (n=100)                            2898.0    2622.6    1343.2    718.0     
-Preferential Attachment (n=100, k=5)    830.7     734.5     816.9     627.7     
+Grid (w=10, h=10, type=von Neumann)     1048.9    983.2     947.1     725.6     
+Grid (w=10, h=10, type=Moore)           964.3     920.6     807.1     629.2     
+Torus (w=10, h=10, type=von Neumann)    815.2     791.5     690.1     642.7     
+Torus (w=10, h=10, type=Moore)          623.2     668.9     598.7     485.9     
+Erdos-Renyi (n=100, p=2)                590.2     531.2     530.6     493.7     
+Planar (n=100)                          1344.9    1352.8    1092.5    954.0     
+Fully Connected (n=100)                 543.8     433.9     483.6     422.7     
+Ring (n=100)                            3108.1    2201.9    1778.8    1027.5    
+Preferential Attachment (n=100, k=5)    798.6     845.7     800.5     652.2     
