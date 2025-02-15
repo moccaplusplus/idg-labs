@@ -116,7 +116,7 @@ public class Generators {
     }
 
     private static Edge addEdge(Graph graph, Node from, Node to) {
-        return graph.addEdge(format("%s -> %s", from.getId(), to.getId()), from, to);
+        return addEdge(graph, from.getIndex(), to.getIndex());
     }
 
     private static Edge addEdge(Graph graph, int from, int to) {

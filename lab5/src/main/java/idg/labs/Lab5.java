@@ -25,7 +25,6 @@ public class Lab5 {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-
         EpidemicAutomaton automaton1 = new EpidemicAutomaton(0.05, 0.15, 30);
         // this automaton seems to get extinct after 218 iteration in von Neumann version
         run(automaton1, false, 500);

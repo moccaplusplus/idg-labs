@@ -103,7 +103,7 @@ public class EpidemicAutomaton {
                 .collect(joining(", "));
     }
 
-    public Object settingsInfo() {
+    public String settingsInfo() {
         return "recoveryProbability=" + recoveryProbability
                 + ", infectionProbability=" + infectionProbability
                 + ", immunityTimeSpan=" + immunityTimeSpan;
